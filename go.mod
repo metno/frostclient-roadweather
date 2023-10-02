@@ -1,4 +1,4 @@
-module gitlab.met.no/modellprod/frostclient-roadweather
+module github.com/metno/frostclient-roadweather
 
 go 1.19
 
