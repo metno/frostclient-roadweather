@@ -1,0 +1,6 @@
+github.com/mattn/go-sqlite3 v1.14.16 h1:yOQRA0RpS5PFz/oikGwBEqvAWhWg5ufRz4ETLjwpU1Y=
+github.com/mattn/go-sqlite3 v1.14.16/go.mod h1:2eHXhiwb8IkHr+BDWZGa96P6+rkvnG63S2DGjv9HUNg=
+gitlab.met.no/modellprod/roadlabels v0.0.0-20230929003912-5c68dc0aa738 h1:AmgpSk1chTbFx3uOxTUfMprAvjkmIBs5M0y6o8+FdzU=
+gitlab.met.no/modellprod/roadlabels v0.0.0-20230929003912-5c68dc0aa738/go.mod h1:HaCE6QIiL4ybHGsKFmF0aaG+0wZO+K6Ya3Za8ep6MUM=
+golang.org/x/exp v0.0.0-20230905200255-921286631fa9 h1:GoHiUyI/Tp2nVkLI2mCxVkOjsbSXD66ic0XW0js0R9g=
+golang.org/x/exp v0.0.0-20230905200255-921286631fa9/go.mod h1:S2oDrQGGwySpoQPVqRShND87VCbxmc6bL1Yd2oYrm6k=
