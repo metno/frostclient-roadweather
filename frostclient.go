@@ -114,7 +114,7 @@ func obsTypeReq(frostID string) (ObsType, error) {
 	sh := ObsType{}
 
 	client := http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 20 * time.Second,
 	}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -147,15 +147,7 @@ func stationHolderReq(url string) (StationHolderReq, error) {
 
 	sh := StationHolderReq{}
 
-	client := http.Client{
-		Timeout: 4 * time.Second,
-	}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return sh, fmt.Errorf("http.Get(%s) failed: ", url)
-	}
-	req.SetBasicAuth(clientID, "")
-	resp, err := client.Do(req)
+	resp, err := httpReq(url)
 	if err != nil {
 		return sh, fmt.Errorf("http.Get(%s) failed: ", url)
 	}
@@ -235,7 +227,7 @@ func GetStationsWithSensor() (map[string]db.Camera, error) {
 			elements += obstype.ElementID + ","
 		}
 		fmt.Printf("\n")
-
+		time.Sleep(time.Second * 2)
 	}
 	fmt.Printf("%+v\n\n", sourcesMap)
 
@@ -328,6 +320,42 @@ type ObsReq struct {
 	} `json:"data"`
 }
 
+func httpReq(url string) (*http.Response, error) {
+	var (
+		err      error
+		response *http.Response
+		retries  int = 10
+	)
+
+	client := http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("http.Get(%s) failed: %v", url, err)
+	}
+	req.SetBasicAuth(clientID, "")
+
+	for retries > 0 {
+		response, err = client.Do(req)
+		if err != nil {
+			log.Printf("Http request failed. %v. Retrying", err)
+			retries -= 1
+			time.Sleep(2 * time.Second)
+		} else {
+			if response.StatusCode != 200 {
+				log.Printf("Http request failed with status code. %d. Retrying", response.StatusCode)
+				retries -= 1
+				time.Sleep(2 * time.Second)
+			} else {
+				break
+			}
+		}
+	}
+	return response, err
+}
+
 func obsRequest(sources string, elements string, timespan string) (ObsReq, error) {
 
 	url := fmt.Sprintf("https://frost.met.no/observations/v0.jsonld?sources=%s&referencetime=%s&elements=%s&timeoffsets=PT0H&timeresolutions=PT10M&timeseriesids=0&performancecategories=C&exposurecategories=2", sources, timespan, elements)
@@ -336,15 +364,7 @@ func obsRequest(sources string, elements string, timespan string) (ObsReq, error
 
 	sh := ObsReq{}
 
-	client := http.Client{
-		Timeout: 10 * time.Second,
-	}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return sh, fmt.Errorf("http.Get(%s) failed: %v", url, err)
-	}
-	req.SetBasicAuth(clientID, "")
-	resp, err := client.Do(req)
+	resp, err := httpReq(url)
 	if err != nil {
 		return sh, fmt.Errorf("http.Get(%s) failed: %v", url, err)
 	}
@@ -455,25 +475,34 @@ type ObsRoadweather struct {
 
 /*
 	classes := map[int]string{
-		0: "Dry",
-		1: "Wet",
-		2: "Snow",
-		3: "Ice",
-		4: "Wet+Snow",
-		5: "Wet+Ice",
-		6: "Snow+ice",
+		0: "0. Dry",
+		1: "1. Wet",
+		2: "2. Snow",
+		3: "3. Ice",
+		4: "4. Wet+Snow",
+		5: "5. Wet+Ice",
+		6: "6. Snow+ice",
+		7: "7. Snow+ice+Wet",
 	}
 */
 
+/*
 const (
-	Dry                 int = 0
-	Wet                 int = 1
-	Snow                int = 2
-	Ice                 int = 3
-	WetAndSnow          int = 4
-	WetAndIce           int = 5
-	SnowAndIce          int = 6
-	SnowAndIceAndWather int = 7
+	Dry              int = 0
+	Wet              int = 1
+	Snow             int = 2
+	Ice              int = 3
+	WetAndSnow       int = 4
+	WetAndIce        int = 5
+	SnowAndIce       int = 6
+	SnowAndIceAndWet int = 7
+)
+*/
+
+const (
+	Dry          int = 0
+	Wet          int = 1
+	SnowAndOrIce int = 2
 )
 
 func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather, error) {
@@ -493,17 +522,12 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 	to := start.Add(24 * time.Hour)
 	count := 0
 	maxdays := stop.Sub(start).Hours() / 24
-	log.Printf("Hopurs %f: ", maxdays)
+	log.Printf("Samples from %.0f days: ", maxdays)
 
 	classesCount := map[string]int{
-		"Dry":            0,
-		"Wet":            0,
-		"Snow":           0,
-		"Ice":            0,
-		"Wet+Snow":       0,
-		"Wet+Ice":        0,
-		"Snow+Ice":       0,
-		"Snow+Ice+Water": 0,
+		"Dry":          0,
+		"Wet":          0,
+		"SnowAndOrIce": 0,
 	}
 	class2Obses := make(map[int][]ObsRoadweather)
 
@@ -526,9 +550,10 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 			roadConditionClass := -1
 
 			//if times[t].ReferenceTime.Hour() == 0 || times[t].ReferenceTime.Hour() == 6 || times[t].ReferenceTime.Hour() == 12 || times[t].ReferenceTime.Hour() == 18 { // forEach 6th hour
-			if times[t].ReferenceTime.Minute() == 0 {
-				//	continue
-				//}
+			if true {
+				if times[t].ReferenceTime.Minute() != 0 {
+					continue
+				}
 
 				var iceThickness float32 = 0.0
 				var waterThickness float32 = 0.0
@@ -538,7 +563,6 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 						log.Printf("GetFrostObses() Unsupported unit: %s", times[t].Observations[o].Unit)
 						continue
 					}
-					//fmt.Printf("%s %s %+v\n", times[t].SourceID, times[t].ReferenceTime.Format("2006-01-02T15:04Z"), times[t].Observations[o])
 					if times[t].Observations[o].ElementID == "road_ice_thickness" {
 						iceThickness = times[t].Observations[o].Value
 					}
@@ -548,30 +572,14 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 					if times[t].Observations[o].ElementID == "road_snow_thickness" {
 						snowThickness = times[t].Observations[o].Value
 					}
-
-					//fmt.Printf("SourceID: %s camID: %d %s: %+v\n", times[t].SourceID, sourcesMap[times[t].SourceID].ID, times[t].ReferenceTime, times[t].Observations[o])
 				}
+
 				if iceThickness == 0.0 && waterThickness == 0.0 && snowThickness == 0.0 {
 					roadConditionClass = Dry
 					classesCount["Dry"]++
-				} else if iceThickness > 0.0 && waterThickness > 0.0 && snowThickness > 0.0 {
-					roadConditionClass = SnowAndIceAndWather
-					classesCount["Snow+Ice+Water"]++
-				} else if iceThickness > 0.0 && snowThickness > 0.0 {
-					roadConditionClass = SnowAndIce
-					classesCount["Snow+Ice"]++
-				} else if iceThickness > 0.0 && waterThickness > 0.0 {
-					roadConditionClass = WetAndIce
-					classesCount["Wet+Ice"]++
-				} else if snowThickness > 0.0 && waterThickness > 0.0 {
-					roadConditionClass = WetAndSnow
-					classesCount["Wet+Snow"]++
-				} else if iceThickness > 0.0 {
-					roadConditionClass = Ice
-					classesCount["Ice"]++
-				} else if snowThickness > 0.0 {
-					roadConditionClass = Snow
-					classesCount["Snow"]++
+				} else if iceThickness > 0.0 || snowThickness > 0.0 {
+					roadConditionClass = SnowAndOrIce
+					classesCount["SnowAndOrIce"]++
 				} else if waterThickness > 0.0 {
 					roadConditionClass = Wet
 					classesCount["Wet"]++
@@ -579,6 +587,35 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 					panic("Logic error")
 				}
 
+				/*
+					if iceThickness == 0.0 && waterThickness == 0.0 && snowThickness == 0.0 {
+						roadConditionClass = Dry
+						classesCount["Dry"]++
+					} else if iceThickness > 0.0 && waterThickness > 0.0 && snowThickness > 0.0 {
+						roadConditionClass = SnowAndIceAndWet
+						classesCount["Snow+Ice+Water"]++
+					} else if iceThickness > 0.0 && snowThickness > 0.0 {
+						roadConditionClass = SnowAndIce
+						classesCount["Snow+Ice"]++
+					} else if iceThickness > 0.0 && waterThickness > 0.0 {
+						roadConditionClass = WetAndIce
+						classesCount["Wet+Ice"]++
+					} else if snowThickness > 0.0 && waterThickness > 0.0 {
+						roadConditionClass = WetAndSnow
+						classesCount["Wet+Snow"]++
+					} else if iceThickness > 0.0 {
+						roadConditionClass = Ice
+						classesCount["Ice"]++
+					} else if snowThickness > 0.0 {
+						roadConditionClass = Snow
+						classesCount["Snow"]++
+					} else if waterThickness > 0.0 {
+						roadConditionClass = Wet
+						classesCount["Wet"]++
+					} else {
+						panic("Logic error")
+					}
+				*/
 				obs := ObsRoadweather{}
 				obs.CamID = sourcesMap[times[t].SourceID].ID
 				obs.Station = times[t].SourceID
@@ -586,11 +623,11 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 				obs.WaterFilmThickness = waterThickness
 				obs.SnowThickness = snowThickness
 				obs.RefTime = times[t].ReferenceTime
-				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-
-				//fmt.Printf("REFTIME: %v\n", obs.RefTime)
-				//fmt.Printf("%s %s Ice: %0.1f, Water: %0.1f, Snow: %0.1f\n", times[t].ReferenceTime, times[t].SourceID, iceThickness, waterThickness, snowThickness)
-
+				if roadConditionClass == Dry && (times[t].ReferenceTime.Hour() == 0 || times[t].ReferenceTime.Hour() == 6 || times[t].ReferenceTime.Hour() == 12 || times[t].ReferenceTime.Hour() == 18) {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				} else {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				}
 			}
 		}
 		from = from.Add(24 * time.Hour)
