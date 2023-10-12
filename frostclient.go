@@ -501,7 +501,7 @@ const (
 
 const (
 	Dry          int = 0
-	Wet          int = 1
+	Wet          int = 1 // No snow an Ice
 	SnowAndOrIce int = 2
 )
 
@@ -526,7 +526,7 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 
 	classesCount := map[string]int{
 		"Dry":          0,
-		"Wet":          0,
+		"Wet":  0,
 		"SnowAndOrIce": 0,
 	}
 	class2Obses := make(map[int][]ObsRoadweather)
@@ -578,9 +578,9 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 					roadConditionClass = Dry
 					classesCount["Dry"]++
 				} else if iceThickness > 0.0 || snowThickness > 0.0 {
-					roadConditionClass = SnowAndOrIce
+					roadConditionClass = SnowAndOrIce // Can also be be water or no-water
 					classesCount["SnowAndOrIce"]++
-				} else if waterThickness > 0.0 {
+				} else if waterThickness > 0.0 { // Can not be Snow an or Ice becasue ^
 					roadConditionClass = Wet
 					classesCount["Wet"]++
 				} else {
@@ -624,6 +624,8 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 				obs.SnowThickness = snowThickness
 				obs.RefTime = times[t].ReferenceTime
 				if roadConditionClass == Dry && (times[t].ReferenceTime.Hour() == 0 || times[t].ReferenceTime.Hour() == 6 || times[t].ReferenceTime.Hour() == 12 || times[t].ReferenceTime.Hour() == 18) {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				} else if roadConditionClass == Wet && (times[t].ReferenceTime.Hour() == 0 || times[t].ReferenceTime.Hour() == 6 || times[t].ReferenceTime.Hour() == 12 || times[t].ReferenceTime.Hour() == 18) {
 					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
 				} else {
 					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
