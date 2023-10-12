@@ -485,7 +485,6 @@ type ObsRoadweather struct {
 		7: "7. Snow+ice+Wet",
 	}
 */
-
 /*
 const (
 	Dry              int = 0
@@ -498,7 +497,6 @@ const (
 	SnowAndIceAndWet int = 7
 )
 */
-
 const (
 	Dry          int = 0
 	Wet          int = 1 // No snow an Ice
@@ -523,10 +521,21 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 	count := 0
 	maxdays := stop.Sub(start).Hours() / 24
 	log.Printf("Samples from %.0f days: ", maxdays)
-
+	/*
+		classesCount := map[string]int{
+			"Dry":            0,
+			"Wet":            0,
+			"Snow":           0,
+			"Ice":            0,
+			"Wet+Snow":       0,
+			"Wet+Ice":        0,
+			"Snow+Ice":       0,
+			"Snow+Ice+Water": 0,
+		}
+	*/
 	classesCount := map[string]int{
 		"Dry":          0,
-		"Wet":  0,
+		"Wet":          0,
 		"SnowAndOrIce": 0,
 	}
 	class2Obses := make(map[int][]ObsRoadweather)
