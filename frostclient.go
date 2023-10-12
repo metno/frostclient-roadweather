@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.met.no/modellprod/roadlabels/pkg/db"
+	"github.com/metno/roadlabels/pkg/db"
 	"golang.org/x/exp/maps"
 )
 

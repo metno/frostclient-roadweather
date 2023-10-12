@@ -3,7 +3,7 @@ module github.com/metno/frostclient-roadweather
 go 1.19
 
 require (
-	gitlab.met.no/modellprod/roadlabels v0.0.0-20230929003912-5c68dc0aa738
+	github.com/metno/roadlabels v0.0.2
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
 
