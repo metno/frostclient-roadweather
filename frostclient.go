@@ -587,13 +587,13 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 
 			if iceThickness == 0.0 && waterThickness == 0.0 && snowThickness == 0.0 {
 				roadConditionClass = Dry
-				classesCount["Dry"]++
+
 			} else if iceThickness > 0.0 || snowThickness > 0.0 {
 				roadConditionClass = SnowAndOrIce // Can also be be water or no-water
-				classesCount["SnowAndOrIce"]++
+
 			} else if waterThickness > 0.0 { // Can not be Snow an or Ice becasue ^
 				roadConditionClass = Wet
-				classesCount["Wet"]++
+
 			} else {
 				panic("Logic error")
 			}
@@ -627,33 +627,54 @@ func GetDataFromFrost(sourcesMap map[string]db.Camera) (map[int][]ObsRoadweather
 					panic("Logic error")
 				}
 			*/
-			obs := ObsRoadweather{}
-			obs.CamID = sourcesMap[times[t].SourceID].ID
-			obs.Station = times[t].SourceID
-			obs.IceThickness = iceThickness
-			obs.WaterFilmThickness = waterThickness
-			obs.SnowThickness = snowThickness
-			obs.RefTime = times[t].ReferenceTime.UTC()
-			obs.Class = roadConditionClass
 
-			if roadConditionClass == Dry && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 6 || times[t].ReferenceTime.UTC().Hour() == 12 || times[t].ReferenceTime.UTC().Hour() == 18) {
+			if roadConditionClass == Dry && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12) {
+				obs := ObsRoadweather{}
+				obs.CamID = sourcesMap[times[t].SourceID].ID
+				obs.Station = times[t].SourceID
+				obs.IceThickness = iceThickness
+				obs.WaterFilmThickness = waterThickness
+				obs.SnowThickness = snowThickness
+				obs.RefTime = times[t].ReferenceTime.UTC()
+				obs.Class = roadConditionClass
+
 				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-				log.Printf("FITTE: %+v\n", obs)
-				log.Printf("RERRF: %v", times[t].ReferenceTime)
-			} else if roadConditionClass == Wet && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 6 || times[t].ReferenceTime.UTC().Hour() == 12 || times[t].ReferenceTime.UTC().Hour() == 18) {
+				classesCount["Dry"]++
+
+			} else if roadConditionClass == SnowAndOrIce && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12) {
+				obs := ObsRoadweather{}
+				obs.CamID = sourcesMap[times[t].SourceID].ID
+				obs.Station = times[t].SourceID
+				obs.IceThickness = iceThickness
+				obs.WaterFilmThickness = waterThickness
+				obs.SnowThickness = snowThickness
+				obs.RefTime = times[t].ReferenceTime.UTC()
+				obs.Class = roadConditionClass
+
 				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-				log.Printf("RERRF: %v", times[t].ReferenceTime)
-				log.Printf("FITTEs: %+v\n", obs)
-			} else {
+				classesCount["SnowAndOrIce"]++
+
+			} else if roadConditionClass == Wet && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12) { //Must be wet only
+				obs := ObsRoadweather{}
+				obs.CamID = sourcesMap[times[t].SourceID].ID
+				obs.Station = times[t].SourceID
+				obs.IceThickness = iceThickness
+				obs.WaterFilmThickness = waterThickness
+				obs.SnowThickness = snowThickness
+				obs.RefTime = times[t].ReferenceTime.UTC()
+				obs.Class = roadConditionClass
+
 				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+
+				classesCount["Wet"]++
+				//} else if roadConditionClass == SnowAndOrIce && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 6 || times[t].ReferenceTime.UTC().Hour() == 12 || times[t].ReferenceTime.UTC().Hour() == 18) {
 			}
 		}
 		from = from.Add(24 * time.Hour)
 		to = to.Add(24 * time.Hour)
-		break
 	}
-	fmt.Printf("%+v\n", class2Obses)
-	log.Printf("%+v", classesCount)
+
+	log.Printf("CLASSCUTN: %+v", classesCount)
 	return class2Obses, nil
 }
 
