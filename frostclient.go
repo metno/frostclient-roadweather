@@ -757,7 +757,7 @@ func GetDataFromFrost3Classes() (map[int][]ObsRoadweather, error) {
 	classesCount := map[string]int{
 		"Dry":                            0,
 		"Wet":                            0, // No snow or Ice
-		"SnowAndOrIceWithWaterOrWithout": 0,
+		"SnowAndOrIceWithOrWithoutWater": 0,
 	}
 	class2Obses := make(map[int][]ObsRoadweather)
 
@@ -861,7 +861,7 @@ func GetDataFromFrost3Classes() (map[int][]ObsRoadweather, error) {
 				obs.Class = roadConditionClass
 
 				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-				classesCount["SnowAndOrIceWithWater"]++
+				classesCount["SnowAndOrIceWithOrWithoutWater"]++
 				obs.FrostID = times[t].SourceID
 				//fmt.Printf("Obs: %+v\n", obs)
 
