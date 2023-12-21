@@ -395,7 +395,8 @@ type IceObs struct {
 type ObsRoadweather struct {
 	RefTime            time.Time
 	Station            string // SVV Station ID
-	CamID              int    // Internal camid sqlite db
+	FrostID            string
+	CamID              int // Internal camid sqlite db
 	IceThickness       float32
 	WaterFilmThickness float32
 	SnowThickness      float32
@@ -753,24 +754,10 @@ func GetDataFromFrost3Classes() (map[int][]ObsRoadweather, error) {
 	maxdays := stop.Sub(start).Hours() / 24
 	log.Printf("Samples from %.0f days: ", maxdays)
 
-	/*
-		classesCountEnchanched := map[string]int{
-			"Dry":          0,
-			"Wet":          0,
-			"Snow":         0,
-			"Ice":          0,
-			"Wet+Snow":     0,
-			"Wet+Ice":      0,
-			"Snow+Ice":     0,
-			"Snow+Ice+Wet": 0,
-		}
-	*/
 	classesCount := map[string]int{
-		"Dry": 0,
-		"Wet": 0, // No snow or Ice
-		//"SnowAndOrIce": 0, // Can have wather
-		"SnowAndOrIceWithWater": 0,
-		//"SnowAndOrIceWithOutWater": 0,
+		"Dry":                            0,
+		"Wet":                            0, // No snow or Ice
+		"SnowAndOrIceWithWaterOrWithout": 0,
 	}
 	class2Obses := make(map[int][]ObsRoadweather)
 
@@ -789,7 +776,22 @@ func GetDataFromFrost3Classes() (map[int][]ObsRoadweather, error) {
 
 		times := resp.Data
 
+		// Skip due to https://docs.google.com/spreadsheets/d/1xAF5QCVUiIHbwzYMpxVaqyiNqmhZ8ItdoNxlR6rMeqo/edit#gid=0
+		// This is Frost IDs
+		skipList := map[string]bool{
+			"SN16620:0": true,
+			"SN30244:0": true, // No snow or Ice
+			"SN52390:0": true,
+			"SN67153:0": true,
+		}
+
 		for t := 0; t < len(times); t++ {
+			_, exist := skipList[times[t].SourceID]
+			// If the key exists
+			if exist {
+				//fmt.Printf("%s in skiplist. Skipping\n", times[t].SourceID)
+				continue
+			}
 			roadConditionClass := -1
 
 			//if times[t].ReferenceTime.Hour() == 0 || times[t].ReferenceTime.Hour() == 6 || times[t].ReferenceTime.Hour() == 12 || times[t].ReferenceTime.Hour() == 18 { // forEach 6th hour
@@ -831,24 +833,6 @@ func GetDataFromFrost3Classes() (map[int][]ObsRoadweather, error) {
 				panic("Logic error")
 			}
 
-			/*
-				// 4 classes
-				if iceThickness == 0.0 && waterThickness == 0.0 && snowThickness == 0.0 {
-					roadConditionClass = Dry
-
-				} else if (iceThickness > 0.0 || snowThickness > 0.0) && waterThickness > 0.0 {
-					roadConditionClass = SnowAndOrIceWithWater
-
-				} else if (iceThickness > 0.0 || snowThickness > 0.0) && waterThickness == 0.0 {
-					roadConditionClass = SnowAndOrIceWithoutWater
-
-				} else if waterThickness > 0.0 && iceThickness == 0.0 && snowThickness == 0.0 {
-					roadConditionClass = Wet
-				} else {
-					panic("Logic error")
-				}
-			*/
-
 			if roadConditionClass == Dry && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12 ||
 				times[t].ReferenceTime.UTC().Hour() == 6 || times[t].ReferenceTime.UTC().Hour() == 18) {
 				obs := ObsRoadweather{}
@@ -859,15 +843,14 @@ func GetDataFromFrost3Classes() (map[int][]ObsRoadweather, error) {
 				obs.SnowThickness = snowThickness
 				obs.RefTime = times[t].ReferenceTime.UTC()
 				obs.Class = roadConditionClass
+				obs.FrostID = times[t].SourceID
 
 				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
 				classesCount["Dry"]++
+				//fmt.Printf("Obs: %+v\n", obs)
 
-			} else if roadConditionClass == SnowAndOrIce { // With or without water
-				/*
-					(times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12 || times[t].ReferenceTime.UTC().Hour() == 6 ||
-						times[t].ReferenceTime.UTC().Hour() == 18) {
-				*/
+			} else if roadConditionClass == SnowAndOrIce && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12 ||
+				times[t].ReferenceTime.UTC().Hour() == 6 || times[t].ReferenceTime.UTC().Hour() == 18) { // With or without water
 				obs := ObsRoadweather{}
 				obs.CamID = sourcesMap[times[t].SourceID].ID
 				obs.Station = times[t].SourceID
@@ -879,11 +862,12 @@ func GetDataFromFrost3Classes() (map[int][]ObsRoadweather, error) {
 
 				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
 				classesCount["SnowAndOrIceWithWater"]++
+				obs.FrostID = times[t].SourceID
+				//fmt.Printf("Obs: %+v\n", obs)
 
-			} else if roadConditionClass == Wet {
-				/*
-					&& (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12) {
-				*/
+			} else if roadConditionClass == Wet && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12 ||
+				times[t].ReferenceTime.UTC().Hour() == 6 || times[t].ReferenceTime.UTC().Hour() == 18) {
+
 				obs := ObsRoadweather{}
 				obs.CamID = sourcesMap[times[t].SourceID].ID
 				obs.Station = times[t].SourceID
@@ -892,19 +876,19 @@ func GetDataFromFrost3Classes() (map[int][]ObsRoadweather, error) {
 				obs.SnowThickness = snowThickness
 				obs.RefTime = times[t].ReferenceTime.UTC()
 				obs.Class = roadConditionClass
+				obs.FrostID = times[t].SourceID
+				//fmt.Printf("Obs: %+v\n", obs)
 
 				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
 
 				classesCount["Wet"]++
-				//} else if roadConditionClass == SnowAndOrIce && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 6 || times[t].ReferenceTime.UTC().Hour() == 12 || times[t].ReferenceTime.UTC().Hour() == 18) {
 			}
 		}
 		from = from.Add(24 * time.Hour)
 		to = to.Add(24 * time.Hour)
 	}
 
-	log.Printf("\nCLASSCUTN: %+v", classesCount)
-	//log.Printf("CLASSCountBig: %+v", classesCountEnchanched)
+	log.Printf("\nCLASSCOUNT: %+v", classesCount)
 
 	return class2Obses, nil
 }
