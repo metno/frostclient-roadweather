@@ -595,9 +595,9 @@ func GetDataFromFrost8Classes() (map[int][]ObsRoadweather, error) {
 	// No ice after .. may maybe?
 
 	//stop := time.Date(2023, 5, 12, 0, 0, 0, 00, time.UTC)
-	stop := time.Date(2023, 11, 16, 0, 0, 0, 00, time.UTC)
+	//stop := time.Date(2023, 11, 16, 0, 0, 0, 00, time.UTC)
 	//stop := time.Date(2023, 2, 12, 0, 0, 0, 00, time.UTC)
-
+	stop := time.Now().UTC()
 	from := start
 	to := start.Add(24 * time.Hour)
 	count := 0
@@ -699,24 +699,27 @@ func GetDataFromFrost8Classes() (map[int][]ObsRoadweather, error) {
 			obs.RefTime = times[t].ReferenceTime.UTC()
 			obs.Class = roadConditionClass
 
-			// Downsample huge majority class
-			if roadConditionClass == Dry && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12 ||
-				times[t].ReferenceTime.UTC().Hour() == 6 || times[t].ReferenceTime.UTC().Hour() == 18) {
-				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-			} else if roadConditionClass == WetE {
-				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-			} else if roadConditionClass == SnowE {
-				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-			} else if roadConditionClass == IceE {
-				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-			} else if roadConditionClass == WetAndSnowE {
-				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-			} else if roadConditionClass == WetAndIceE {
-				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-			} else if roadConditionClass == SnowAndIceE {
-				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
-			} else if roadConditionClass == SnowAndIceAndWetE {
-				class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+			if times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12 ||
+				times[t].ReferenceTime.UTC().Hour() == 6 || times[t].ReferenceTime.UTC().Hour() == 18 {
+
+				if roadConditionClass == Dry {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				} else if roadConditionClass == WetE && (times[t].ReferenceTime.UTC().Hour() == 0 || times[t].ReferenceTime.UTC().Hour() == 12 ||
+					times[t].ReferenceTime.UTC().Hour() == 6 || times[t].ReferenceTime.UTC().Hour() == 18) {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				} else if roadConditionClass == SnowE {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				} else if roadConditionClass == IceE {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				} else if roadConditionClass == WetAndSnowE {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				} else if roadConditionClass == WetAndIceE {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				} else if roadConditionClass == SnowAndIceE {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				} else if roadConditionClass == SnowAndIceAndWetE {
+					class2Obses[roadConditionClass] = append(class2Obses[roadConditionClass], obs)
+				}
 			}
 		}
 		from = from.Add(24 * time.Hour)
