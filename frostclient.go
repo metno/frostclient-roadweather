@@ -591,12 +591,6 @@ func GetDataFromFrost8Classes() (map[int][]ObsRoadweather, error) {
 
 	// This is so long back we have image data
 	start := time.Date(2023, 2, 10, 0, 0, 0, 00, time.UTC)
-	//start := time.Date(2021, 2, 10, 0, 0, 0, 00, time.UTC)
-	// No ice after .. may maybe?
-
-	//stop := time.Date(2023, 5, 12, 0, 0, 0, 00, time.UTC)
-	//stop := time.Date(2023, 11, 16, 0, 0, 0, 00, time.UTC)
-	//stop := time.Date(2023, 2, 12, 0, 0, 0, 00, time.UTC)
 	stop := time.Now().UTC()
 	from := start
 	to := start.Add(24 * time.Hour)
@@ -663,18 +657,17 @@ func GetDataFromFrost8Classes() (map[int][]ObsRoadweather, error) {
 
 			if iceThickness == 0.0 && waterThickness == 0.0 && snowThickness == 0.0 {
 				roadConditionClass = DryE
-
 				classesCount["Dry"]++
 			} else if iceThickness > 0.0 && waterThickness > 0.0 && snowThickness > 0.0 {
 				roadConditionClass = SnowAndIceAndWetE
 				classesCount["Snow+Ice+Wet"]++
-			} else if iceThickness > 0.0 && snowThickness > 0.0 {
+			} else if iceThickness > 0.0 && snowThickness > 0.0 && waterThickness == 0.0 {
 				roadConditionClass = SnowAndIceE
 				classesCount["Snow+Ice"]++
-			} else if iceThickness > 0.0 && waterThickness > 0.0 {
+			} else if iceThickness > 0.0 && waterThickness > 0.0 && snowThickness == 0.0 {
 				roadConditionClass = WetAndIceE
 				classesCount["Wet+Ice"]++
-			} else if snowThickness > 0.0 && waterThickness > 0.0 {
+			} else if snowThickness > 0.0 && waterThickness > 0.0 && iceThickness == 0.0 {
 				roadConditionClass = WetAndSnowE
 				classesCount["Wet+Snow"]++
 			} else if iceThickness > 0.0 { // => Ice only
