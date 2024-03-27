@@ -1,6 +1,6 @@
-github.com/mattn/go-sqlite3 v1.14.16 h1:yOQRA0RpS5PFz/oikGwBEqvAWhWg5ufRz4ETLjwpU1Y=
-github.com/mattn/go-sqlite3 v1.14.16/go.mod h1:2eHXhiwb8IkHr+BDWZGa96P6+rkvnG63S2DGjv9HUNg=
-github.com/metno/roadlabels v0.0.2 h1:qCohVflkaizmwtf+AR+QxwRk9+yUNSkpzQ+SjMvvAt4=
-github.com/metno/roadlabels v0.0.2/go.mod h1:AgdP7JVFG3q+LVf4sd4dHfRDbu9pRvx8Lq3CWROatVc=
+github.com/mattn/go-sqlite3 v1.14.17 h1:mCRHCLDUBXgpKAqIKsaAaAsrAlbkeomtRFKXh2L6YIM=
+github.com/mattn/go-sqlite3 v1.14.17/go.mod h1:2eHXhiwb8IkHr+BDWZGa96P6+rkvnG63S2DGjv9HUNg=
+github.com/metno/roadlabels v0.0.3 h1:hY6iRjZ0Cu6MWEvc2QdYYpKtvD5ZZo188ArxJngT27k=
+github.com/metno/roadlabels v0.0.3/go.mod h1:ZtU9K1QibEjSxlo06Xd3Iuk+VK2+iXTPIXHIKEGJDgA=
 golang.org/x/exp v0.0.0-20230905200255-921286631fa9 h1:GoHiUyI/Tp2nVkLI2mCxVkOjsbSXD66ic0XW0js0R9g=
 golang.org/x/exp v0.0.0-20230905200255-921286631fa9/go.mod h1:S2oDrQGGwySpoQPVqRShND87VCbxmc6bL1Yd2oYrm6k=

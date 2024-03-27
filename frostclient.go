@@ -428,6 +428,17 @@ const (
 	ObsIce   int = 2
 )
 
+var ClassesMap8 = map[int]string{
+	0: "Dry",
+	1: "Wet",
+	2: "Snow",
+	3: "Ice",
+	4: "Wet+Snow",
+	5: "Wet+Ice",
+	6: "Snow+Ice",
+	7: "Snow+Ice+Wet",
+}
+
 func GetObsMapForLabelApp() (map[string][]ObsRoadweather, error) {
 
 	sourcesMap, err := GetStationsWithSensor()
