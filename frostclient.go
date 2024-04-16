@@ -457,6 +457,12 @@ var ClassesMap6 = map[int]string{
 	5: "Snow+Ice+Wet,Wet+Ice,Wet+Snow",
 }
 
+var ClassesMap3 = map[int]string{
+	0: "Dry",
+	1: "Wet",
+	2: "Snow+Ice+Wet,Wet+Ice,Wet+Snow",
+}
+
 func GetDataFromFrost6Classes() (map[int][]ObsRoadweather, error) {
 
 	sourcesMap, err := GetStationsWithSensor()
