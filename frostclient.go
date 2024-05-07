@@ -525,11 +525,12 @@ func GetDataFromFrost4Classes() (map[int][]ObsRoadweather, error) {
 		for t := 0; t < len(times); t++ {
 			roadConditionClass := -1
 
-			//if times[t].ReferenceTime.Hour() == 0 || times[t].ReferenceTime.Hour() == 6 || times[t].ReferenceTime.Hour() == 12 || times[t].ReferenceTime.Hour() == 18 { // forEach 6th hour
-
-			if times[t].ReferenceTime.UTC().Minute() != 0 {
+			if times[t].ReferenceTime.Hour() != 0 && times[t].ReferenceTime.Hour() != 6 && times[t].ReferenceTime.Hour() != 12 && times[t].ReferenceTime.Hour() != 18 { // forEach 6th hour
 				continue
 			}
+			//if times[t].ReferenceTime.UTC().Minute() != 0 {
+			//	continue
+			//}
 			// These are "Guaranteed" to be overwritten
 			var iceThickness float32 = 0.0
 			var waterThickness float32 = 0.0
@@ -557,17 +558,10 @@ func GetDataFromFrost4Classes() (map[int][]ObsRoadweather, error) {
 				}
 			}
 
-			if iceThickness == 0.0 && waterThickness == 0.0 && snowThickness == 0.0 &&
-				(times[t].ReferenceTime.UTC().Hour() == 0 ||
-					times[t].ReferenceTime.UTC().Hour() == 12 ||
-					times[t].ReferenceTime.UTC().Hour() == 6 ||
-					times[t].ReferenceTime.UTC().Hour() == 18) {
+			if iceThickness == 0.0 && waterThickness == 0.0 && snowThickness == 0.0 {
 				roadConditionClass = Dry4
 				classesCount["Dry"]++
 
-			} else if iceThickness == 0.0 && waterThickness == 0.0 && snowThickness == 0.0 {
-				// Downsample Dry
-				continue
 			} else if iceThickness == 0.0 && snowThickness == 0.0 && waterThickness > 0.0 {
 				roadConditionClass = Wet4
 				classesCount["Wet"]++
