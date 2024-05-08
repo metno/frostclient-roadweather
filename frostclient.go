@@ -528,9 +528,9 @@ func GetDataFromFrost4Classes() (map[int][]ObsRoadweather, error) {
 			if times[t].ReferenceTime.Hour() != 0 && times[t].ReferenceTime.Hour() != 6 && times[t].ReferenceTime.Hour() != 12 && times[t].ReferenceTime.Hour() != 18 { // forEach 6th hour
 				continue
 			}
-			//if times[t].ReferenceTime.UTC().Minute() != 0 {
-			//	continue
-			//}
+			if times[t].ReferenceTime.UTC().Minute() != 0 {
+				continue
+			}
 			// These are "Guaranteed" to be overwritten
 			var iceThickness float32 = 0.0
 			var waterThickness float32 = 0.0
